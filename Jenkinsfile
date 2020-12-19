@@ -5,17 +5,24 @@ pipeline {
     string(name: 'cluster', defaultValue : 'demo', description: "EKS cluster name.")
     choice(name: 'k8s_version', choices: '1.17\n1.18\n1.16\n1.15', description: 'K8s version to install.')
     string(name: 'instance_type', defaultValue : 'm5.large', description: "k8s worker node instance type.")
+    string(name: 'public_subnet1', defaultValue : 'lothar-aws4', description: "Public subnet for eks.")
+    string(name: 'public_subnet2', defaultValue : 'lothar-aws4', description: "Public subnet for eks.")
+    string(name: 'public_subnet3', defaultValue : 'lothar-aws4', description: "Public subnet for eks.")
+    string(name: 'private_subnet1', defaultValue : 'lothar-aws4', description: "Private subnet for eks.")
+    string(name: 'private_subnet2', defaultValue : 'lothar-aws4', description: "Private subnet for eks.")
+    string(name: 'private_subnet3', defaultValue : 'lothar-aws4', description: "Private subnet for eks.")
     string(name: 'num_workers', defaultValue : '3', description: "k8s number of worker instances.")
     string(name: 'max_workers', defaultValue : '10', description: "k8s maximum number of worker instances that can be scaled.")
     string(name: 'admin_users', defaultValue : '', description: "Comma delimited list of IAM users to add to the aws-auth config map.")
     string(name: 'credential', defaultValue : 'jenkins', description: "Jenkins credential that provides the AWS access key and secret.")
     booleanParam(name: 'cw_logs', defaultValue : true, description: "Setup Cloudwatch logging?")
+    booleanParam(name: 'private_endpoint', defaultValue : true, description: "API Endpoint Access")
     booleanParam(name: 'cw_metrics', defaultValue : false, description: "Setup Cloudwatch metrics and Container Insights?")
     booleanParam(name: 'nginx_ingress', defaultValue : true, description: "Setup nginx ingress and load balancer?")
     booleanParam(name: 'ca', defaultValue : false, description: "Setup k8s Cluster Autoscaler?")
     booleanParam(name: 'cert_manager', defaultValue : false, description: "Setup cert-manager for certificate handling?")
-    string(name: 'region', defaultValue : 'eu-west-1', description: "AWS region.")
-    string(name: 'key_pair', defaultValue : 'spicysomtam-aws4', description: "EC2 instance ssh keypair.")
+    string(name: 'region', defaultValue : 'us-west-2', description: "AWS region.")
+    
   }
 
   options {
@@ -69,7 +76,10 @@ pipeline {
                 --name ${params.cluster} \
                 --version ${params.k8s_version} \
                 --region  ${params.region} \
+                --vpc-public-subnets ${public_subnet1},${public_subnet2},${public_subnet3}  \
+                --vpc-private-subnets ${private_subnet1},${private_subnet2},${private_subnet3} \
                 --nodegroup-name ${params.cluster}-0 \
+                --privateNetworking true \
                 --nodes ${params.num_workers} \
                 --nodes-min ${params.num_workers} \
                 --nodes-max ${params.max_workers} \
@@ -77,7 +87,6 @@ pipeline {
                 --with-oidc \
                 --ssh-access \
                 ${ca_args} \
-                --ssh-public-key ${params.key_pair} \
                 --managed
             """
 
@@ -87,6 +96,12 @@ pipeline {
               sh """
                 ./eksctl utils update-cluster-logging --enable-types all --approve --cluster ${params.cluster}
               """
+            }
+            if (params.private_endpoint == true) {
+              echo "Setting Endpoint Access to private."
+              sh """
+                aws eks update-cluster-config --region ${params.region}--name ${params.cluster} --resources-vpc-config endpointPublicAccess=true,endpointPrivateAccess=true
+                """
             }
           }
         }

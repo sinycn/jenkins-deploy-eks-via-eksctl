@@ -32,7 +32,7 @@ pipeline {
     ansiColor('xterm')
   }
 
-  agent { label 'master' }
+  agent { label 'centos7' }
 
   stages {
 

@@ -83,9 +83,6 @@ pipeline {
                 --nodes-min ${params.num_workers} \
                 --nodes-max ${params.max_workers} \
                 --node-type ${params.instance_type} \
-                --with-oidc \
-                --ssh-access \
-                ${ca_args} \
                 --managed
             """
 

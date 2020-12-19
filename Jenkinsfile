@@ -79,7 +79,6 @@ pipeline {
                 --vpc-public-subnets ${public_subnet1},${public_subnet2},${public_subnet3}  \
                 --vpc-private-subnets ${private_subnet1},${private_subnet2},${private_subnet3} \
                 --nodegroup-name ${params.cluster}-0 \
-                --privateNetworking true \
                 --nodes ${params.num_workers} \
                 --nodes-min ${params.num_workers} \
                 --nodes-max ${params.max_workers} \
